@@ -69,8 +69,19 @@
 If you experience problems with an extension after using `My Env Injector`, follow these steps to restore it:
 
 1.  **Disable `My Env Injector`:** Go to the Extensions view in VS Code and disable `My Env Injector`.
-2.  **Uninstall the Damaged Extension:** Uninstall the extension that is exhibiting issues.
-3.  **Reinstall the Extension:** Reinstall the extension you just uninstalled. This will restore it to its original state.
+2.  **Locate the Damaged Extension's Installation Directory:** VS Code retains the last installed version of an extension even after uninstallation.  Simply uninstalling and reinstalling won't revert the changes made by `My Env Injector`. You need to manually delete the modified files.
+    *   If you set `myEnvInjector.extensionParentDir` in settings, use that directory.
+    *   Otherwise, locate your VS Code extension directory. The default paths are typically:
+        *   **Windows:** `%USERPROFILE%\.vscode\extensions`
+        *   **macOS:** `~/.vscode/extensions`
+        *   **Linux:** `~/.vscode/extensions`
+3.  **Find the Extension's Folder:** Within the extensions directory, find the folder corresponding to the damaged extension. The folder name will follow a format like `publisher.extension-name-version` (e.g., `google.geminicodeassist-0.1.0`).
+4. **Delete the Extension Folder**: Once you have found the right extension folder, delete it entirely from your file system.
+5.  **Reinstall the Extension:** Go back to VS Code, open the Extensions view, and reinstall the extension you just removed. This will download a fresh, unmodified copy.
+
+**Explanation:** VS Code keeps a copy of the last installed version of an extension locally. This means uninstalling through the UI doesn't fully remove the modified files. By deleting the extension folder manually, you remove the modified version and force VS Code to download a clean copy upon reinstallation.
+
+**Reference:** [https://stackoverflow.com/questions/36746857/completely-uninstall-vs-code-extensions](https://stackoverflow.com/questions/36746857/completely-uninstall-vs-code-extensions)
 
 ## Prerequisites
 
