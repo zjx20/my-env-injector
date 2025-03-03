@@ -58,7 +58,7 @@
 4.  **Modification:** For each target extension, it runs the Python script (`modifyExtension.py`) that performs the following steps:
     *   Reads the `extension.js` file of the target extension (usually located in `dist/extension.js` within the extension's directory).
     *   Finds and removes any previously injected code using the marker comments (`// --- My Env Injector Start ---` and `// --- My Env Injector End ---`).
-    *   Injects the new environment variable assignments using `process.env.<VAR_NAME> = '<VALUE>';` at the end of the file.
+    *   Injects the new environment variable assignments using `process.env.<VAR_NAME> = '<VALUE>';` at the beginning of the file.
     *   Writes the modified `extension.js` file back to disk.
 5.  **Configuration Change:** If you change the `myEnvInjector.targets` or `myEnvInjector.extensionParentDir` settings, the extension will automatically re-inject the environment variables.
 6. **Status Update**: The plugin will show corresponding messages based on the status of each extension.

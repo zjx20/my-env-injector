@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { spawn } from 'child_process';
+import { randomUUID } from 'crypto';
 
 // Define the possible statuses for each extension
 type ExtensionStatus = "injected" | "not found" | "not modified";
@@ -10,7 +11,7 @@ interface ExtensionStatusMap {
     [extensionName: string]: ExtensionStatus;
 }
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
     console.log('Congratulations, your extension "my-env-injector" is now active!');
 
     // Load the persisted extension status from global state
@@ -25,21 +26,58 @@ export function activate(context: vscode.ExtensionContext) {
             }
             // Persist the cleared extension status
             context.globalState.update('extensionStatus', extensionStatus);
-            injectEnvVars(context, extensionStatus, context);
 
-            // Show the reload notification for configuration changes
-            vscode.window.showInformationMessage(
-                "My Env Injector: Please reload the VS Code window for the configuration changes to take effect.",
-                "Reload Now"
-            ).then(selection => {
-                if (selection === "Reload Now") {
-                    vscode.commands.executeCommand("workbench.action.reloadWindow");
-                }
-            });
+            // Asyncronously inject env vars
+            injectEnvVarsWithLock(context, extensionStatus, context);
         }
     }));
 
-    injectEnvVars(context, extensionStatus, context);
+    await injectEnvVarsWithLock(context, extensionStatus, context);
+}
+
+// Acquire a lock to prevent concurrent executions.
+// The locking mechanism is not perfect but should work for most cases
+async function acquireLock(context: vscode.ExtensionContext, timeout: number = 30000): Promise<boolean> {
+    const startTime = Date.now();
+    const lockKey = 'myEnvInjector.lock';
+    const lockValue = `${randomUUID()}-${startTime}`;
+
+    while (Date.now() - startTime < timeout) {
+        const currentLock = context.globalState.get(lockKey);
+
+        if (!currentLock) {
+            await context.globalState.update(lockKey, lockValue);
+
+            // Double check
+            if (context.globalState.get(lockKey) === lockValue) {
+                return true;
+            }
+        } else {
+            // Check stale lock
+            const lastLockTime = (currentLock as string).split('-')[1];
+            if (Date.now() - Number(lastLockTime) > 30000) {
+                // Clean up stale lock
+                await context.globalState.update(lockKey, undefined);
+                continue;
+            }
+        }
+
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    return false;
+}
+
+async function releaseLock(context: vscode.ExtensionContext) {
+    await context.globalState.update('myEnvInjector.lock', undefined);
+}
+
+async function injectEnvVarsWithLock(context: vscode.ExtensionContext, extensionStatus: ExtensionStatusMap, originalContext: vscode.ExtensionContext) {
+    if (await acquireLock(context)) {
+        injectEnvVars(context, extensionStatus, originalContext);
+        releaseLock(context);
+    }
 }
 
 function injectEnvVars(context: vscode.ExtensionContext, extensionStatus: ExtensionStatusMap, originalContext: vscode.ExtensionContext) {

@@ -5,6 +5,21 @@ import re
 import shutil
 import glob
 
+def normalize_content(content):
+    """
+    Normalizes file content by handling leading and trailing whitespace.
+
+    Args:
+        content: The file content to normalize.
+    Returns:
+        Normalized content string with consistent line endings.
+    """
+    # Remove leading empty lines
+    content = content.lstrip('\n')
+    # Ensure exactly one trailing newline
+    content = content.rstrip('\n') + '\n'
+    return content
+
 def modify_extension_js(extension_dir, env_vars):
     """
     Modifies the extension.js file of a VS Code extension to inject environment variables.
@@ -26,30 +41,38 @@ def modify_extension_js(extension_dir, env_vars):
     end_marker = "// --- My Env Injector End ---"
 
     try:
+        with open(extension_js_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # Build the new injection code
+        injection_code = [start_marker]
+        for key, value in env_vars.items():
+            value = value.replace("'", "\\'")
+            injection_code.append(f"process.env.{key} = '{value}';")
+        injection_code.append(end_marker)
+        injection_code_str = "\n".join(injection_code)
+
+        if injection_code_str in content:
+            print(f"Injection code already exists in {extension_js_path}, skipping modification")
+            return
+
         # Create a backup
         if not os.path.exists(backup_js_path):
             os.makedirs(os.path.dirname(backup_js_path), exist_ok=True)
             shutil.copy2(extension_js_path, backup_js_path)
             print(f"Backup created: {backup_js_path}")
 
-        with open(extension_js_path, 'r') as f:
-            content = f.read()
-
-        # Remove existing injected code if present
+        # First clean up any old injection code that might have different formatting
         pattern = re.compile(f"{re.escape(start_marker)}.*?{re.escape(end_marker)}", re.DOTALL)
         content = pattern.sub("", content)
 
-        # Build the new injection code
-        injection_code = [start_marker]
-        for key, value in env_vars.items():
-            injection_code.append(f"process.env.{key} = '{value}';")
-        injection_code.append(end_marker)
-        injection_code_str = "\n".join(injection_code)
+        # Check if the exact same injection code already exists (after normalization)
+        normalized_content = normalize_content(content)
 
-        # Append the new code to the end of the file
-        new_content = content + "\n" + injection_code_str + "\n"
+        # Insert the new code at the beginning and normalize the final content
+        new_content = injection_code_str + '\n' + normalized_content
 
-        with open(extension_js_path, 'w') as f:
+        with open(extension_js_path, 'w', encoding='utf-8') as f:
             f.write(new_content)
 
         print(f"Successfully injected env vars into {extension_js_path}")
