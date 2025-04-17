@@ -54,7 +54,8 @@ async function acquireLock(context: vscode.ExtensionContext, timeout: number = 3
             }
         } else {
             // Check stale lock
-            const lastLockTime = (currentLock as string).split('-')[1];
+            const lastLockTime = (currentLock as string).split('-').pop();
+            console.log("last lock time: ", lastLockTime, "elapse: ", Date.now() - Number(lastLockTime))
             if (Date.now() - Number(lastLockTime) > 30000) {
                 // Clean up stale lock
                 await context.globalState.update(lockKey, undefined);
@@ -74,9 +75,13 @@ async function releaseLock(context: vscode.ExtensionContext) {
 }
 
 async function injectEnvVarsWithLock(context: vscode.ExtensionContext, extensionStatus: ExtensionStatusMap, originalContext: vscode.ExtensionContext) {
+    console.log("in injectEnvVarsWithLock");
     if (await acquireLock(context)) {
+        console.log("acquired lock, begin injecting");
         injectEnvVars(context, extensionStatus, originalContext);
         releaseLock(context);
+    } else {
+        console.log("failed to acquire lock");
     }
 }
 
