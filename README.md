@@ -134,7 +134,7 @@ Please follow these steps to publish the extension to the VS Code Marketplace:
 3.  Create a publisher in VS Code Marketplace Publisher Management page.
 4.  Modify `package.json`, adding fields `publisher`, `categories`, `icon`, `repository`, `keywords` if needed.
 5. Create a `CHANGELOG.md` and describe the changes you made.
-6.  Run `vsce login YOUR_PUBLISHER_ID --pat YOUR_PAT` to login.
+6.  Run `vsce login YOUR_PUBLISHER_ID` to login.
 7.  Run `vsce package` to package the extension.
 8. Run `vsce publish` to publish the extension.
 9. Visit `https://marketplace.visualstudio.com/manage/publishers` to check the publish status.
